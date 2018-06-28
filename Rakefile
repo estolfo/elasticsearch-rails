@@ -60,12 +60,9 @@ namespace :test do
   end
 
   desc "Run Elasticsearch (Docker)"
-  task :setup_elasticsearch do
+  task :docker_elasticsearch do
     begin
       sh <<-COMMAND.gsub(/^\s*/, '').gsub(/\s{1,}/, ' ')
-          docker stop $(docker ps -aq);
-          docker rm $(docker ps -aq);
-          docker rmi $(docker images -q);
           docker run -d=true \
             --env "discovery.type=single-node" \
             --env "cluster.name=elasticsearch-rails" \
@@ -83,7 +80,7 @@ namespace :test do
   end
 
   desc "Run integration tests in all subprojects"
-  task :integration => :setup_elasticsearch do
+  task :integration => :docker_elasticsearch do
     # 1/ elasticsearch-model
     #
     puts '-'*80
