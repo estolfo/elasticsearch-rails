@@ -43,24 +43,24 @@ $elasticsearch_url = ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200')
 cluster_info = Net::HTTP.get(URI.parse($elasticsearch_url)) rescue nil
 cluster_info = JSON.parse(cluster_info) if cluster_info
 
-if cluster_info.nil? || cluster_info['version']['number'] < '5'
+if cluster_info.nil? || cluster_info['version']['number'] < '6'
   # Change the port when incompatible Elasticsearch version is running on localhost:9200
-  if $elasticsearch_url == 'http://localhost:9200' && cluster_info && cluster_info['version']['number'] < '5'
+  if $elasticsearch_url == 'http://localhost:9200' && cluster_info && cluster_info['version']['number'] < '6'
     $change_port = '9280'
     $elasticsearch_url = "http://localhost:#{$change_port}"
   end
 
   COMMAND = <<-COMMAND.gsub(/^    /, '')
-    curl -# -O "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.2.1.tar.gz"
-    tar -zxf elasticsearch-5.2.1.tar.gz
-    rm  -f   elasticsearch-5.2.1.tar.gz
-    ./elasticsearch-5.2.1/bin/elasticsearch -d -p #{destination_root}/tmp/pids/elasticsearch.pid #{$change_port.nil? ? '' : "-E http.port=#{$change_port}" }
+    curl -# -O "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.0.tar.gz"
+    tar -zxf elasticsearch-6.3.0.tar.gz
+    rm  -f   elasticsearch-6.3.0.tar.gz
+    ./elasticsearch-6.3.0/bin/elasticsearch -d -p #{destination_root}/tmp/pids/elasticsearch.pid #{$change_port.nil? ? '' : "-E http.port=#{$change_port}" }
   COMMAND
 
   puts        "\n"
   say_status  "ERROR", "Elasticsearch not running!\n", :red
   puts        '-'*80
-  say_status  '',      "It appears that Elasticsearch 5 is not running on this machine."
+  say_status  '',      "It appears that Elasticsearch 6 is not running on this machine."
   say_status  '',      "Is it installed? Do you want me to install and run it for you with this command?\n\n"
   COMMAND.each_line { |l| say_status '', "$ #{l}" }
   puts
@@ -100,7 +100,7 @@ end unless ENV['RAILS_NO_ES_INSTALL']
 
 run "touch tmp/.gitignore"
 
-append_to_file ".gitignore", "vendor/elasticsearch-5.2.1/\n"
+append_to_file ".gitignore", "vendor/elasticsearch-6.3.0/\n"
 
 git :init
 git add:    "."
