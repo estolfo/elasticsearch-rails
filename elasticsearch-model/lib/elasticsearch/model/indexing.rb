@@ -39,10 +39,10 @@ module Elasticsearch
         # @private
         TYPES_WITH_EMBEDDED_PROPERTIES = %w(object nested)
 
-        def initialize(type, options={})
-          raise ArgumentError, "`type` is missing" if type.nil?
+        DEFAULT_TYPE = :_doc
 
-          @type    = type
+        def initialize(type, options={})
+          @type    = type || DEFAULT_TYPE
           @options = options
           @mapping = {}
         end
