@@ -2,12 +2,14 @@ require 'spec_helper'
 
 describe Elasticsearch::Persistence::Repository::Search do
 
-  let(:repository) do
-    Elasticsearch::Persistence::Repository::Base
+  before do
+    class MyRepository
+      include Elasticsearch::Persistence::Repository
+      client DEFAULT_CLIENT
+    end
   end
 
   after do
-    begin; Elasticsearch::Persistence::Repository::Base.delete_index!; rescue; end
     if defined?(MyRepository)
       begin; MyRepository.delete_index!; rescue; end
       Object.send(:remove_const, MyRepository.name)
@@ -21,18 +23,19 @@ describe Elasticsearch::Persistence::Repository::Search do
     end
 
     let(:response) do
-      repository.save(document)
+      MyRepository.save(document)
     end
 
     it 'saves the document' do
-      expect(repository.find(response['_id'])).to eq('a' => 1)
+      expect(MyRepository.find(response['_id'])).to eq('a' => 1)
     end
 
     context 'when the repository defines a custom serialize method' do
 
       before do
-        class MyRepository < Elasticsearch::Persistence::Repository::Base
-          client Elasticsearch::Persistence::Repository::Base.client
+        class MyRepository
+          include Elasticsearch::Persistence::Repository
+          client DEFAULT_CLIENT
           def serialize(document)
             { b: 1 }
           end
@@ -44,21 +47,21 @@ describe Elasticsearch::Persistence::Repository::Search do
       end
 
       it 'saves the document' do
-        expect(repository.find(response['_id'])).to eq('b' => 1)
+        expect(MyRepository.find(response['_id'])).to eq('b' => 1)
       end
     end
 
     context 'when options are provided' do
 
       let(:response) do
-        repository.save(document, type: 'other_type')
+        MyRepository.save(document, type: 'other_type')
       end
 
       it 'saves the document using the options' do
         expect {
-          repository.find(response['_id'])
+          MyRepository.find(response['_id'])
         }.to raise_exception(Elasticsearch::Persistence::Repository::DocumentNotFound)
-        expect(repository.find(response['_id'], type: 'other_type')).to eq('a' => 1)
+        expect(MyRepository.find(response['_id'], type: 'other_type')).to eq('a' => 1)
       end
     end
   end
@@ -82,7 +85,7 @@ describe Elasticsearch::Persistence::Repository::Search do
     context 'when the document exists' do
 
       let!(:id) do
-        repository.save(Note.new)['_id']
+        MyRepository.save(Note.new)['_id']
       end
 
       context 'when an id is provided' do
@@ -90,58 +93,58 @@ describe Elasticsearch::Persistence::Repository::Search do
         context 'when a doc is specified in the options' do
 
           before do
-            repository.update(id, doc: { text: 'testing_2' })
+            MyRepository.update(id, doc: { text: 'testing_2' })
           end
 
           it 'updates using the doc parameter' do
-            expect(repository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
+            expect(MyRepository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
           end
         end
 
         context 'when a script is specified in the options' do
 
           before do
-            repository.update(id, script: { inline: 'ctx._source.views += 1' })
+            MyRepository.update(id, script: { inline: 'ctx._source.views += 1' })
           end
 
           it 'updates using the script parameter' do
-            expect(repository.find(id)).to eq('text' => 'testing', 'views' => 1)
+            expect(MyRepository.find(id)).to eq('text' => 'testing', 'views' => 1)
           end
         end
 
         context 'when params are specified in the options' do
 
           before do
-            repository.update(id, script: { inline: 'ctx._source.views += params.count',
+            MyRepository.update(id, script: { inline: 'ctx._source.views += params.count',
                                             params: { count: 2 } })
           end
 
           it 'updates using the script parameter' do
-            expect(repository.find(id)).to eq('text' => 'testing', 'views' => 2)
+            expect(MyRepository.find(id)).to eq('text' => 'testing', 'views' => 2)
           end
         end
 
         context 'when upsert is specified in the options' do
 
           before do
-            repository.update(id, script: { inline: 'ctx._source.views += 1' },
+            MyRepository.update(id, script: { inline: 'ctx._source.views += 1' },
                                   upsert: { text: 'testing_2' })
           end
 
           it 'executes the script' do
-            expect(repository.find(id)).to eq('text' => 'testing', 'views' => 1)
+            expect(MyRepository.find(id)).to eq('text' => 'testing', 'views' => 1)
           end
         end
 
         context 'when doc_as_upsert is specified in the options' do
 
           before do
-            repository.update(id, doc: { text: 'testing_2' },
+            MyRepository.update(id, doc: { text: 'testing_2' },
                                   doc_as_upsert: true)
           end
 
           it 'applies the update' do
-            expect(repository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
+            expect(MyRepository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
           end
         end
       end
@@ -151,11 +154,11 @@ describe Elasticsearch::Persistence::Repository::Search do
         context 'when no options are provided' do
 
           before do
-            repository.update(id: id, text: 'testing_2')
+            MyRepository.update(id: id, text: 'testing_2')
           end
 
           it 'updates using the id and the document as the doc parameter' do
-            expect(repository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
+            expect(MyRepository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
           end
         end
 
@@ -164,48 +167,48 @@ describe Elasticsearch::Persistence::Repository::Search do
           context 'when a doc is specified in the options' do
 
             before do
-              repository.update({ id: id, text: 'testing' }, doc: { text: 'testing_2' })
+              MyRepository.update({ id: id, text: 'testing' }, doc: { text: 'testing_2' })
             end
 
             it 'updates using the id and the doc in the options' do
-              expect(repository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
+              expect(MyRepository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
             end
           end
 
           context 'when a script is specified in the options' do
 
             before do
-              repository.update({ id: id, text: 'testing' },
+              MyRepository.update({ id: id, text: 'testing' },
                                 script: { inline: 'ctx._source.views += 1' })
             end
 
             it 'updates using the id and script from the options' do
-              expect(repository.find(id)).to eq('text' => 'testing', 'views' => 1)
+              expect(MyRepository.find(id)).to eq('text' => 'testing', 'views' => 1)
             end
           end
 
           context 'when params are specified in the options' do
 
             before do
-              repository.update({ id: id, text: 'testing' },
+              MyRepository.update({ id: id, text: 'testing' },
                                 script: { inline: 'ctx._source.views += params.count',
                                           params: { count: 2 } })
             end
 
             it 'updates using the id and script and params from the options' do
-              expect(repository.find(id)).to eq('text' => 'testing', 'views' => 2)
+              expect(MyRepository.find(id)).to eq('text' => 'testing', 'views' => 2)
             end
           end
 
           context 'when upsert is specified in the options' do
 
             before do
-              repository.update({ id: id, text: 'testing_2' },
+              MyRepository.update({ id: id, text: 'testing_2' },
                                 doc_as_upsert: true)
             end
 
             it 'updates using the id and script and params from the options' do
-              expect(repository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
+              expect(MyRepository.find(id)).to eq('text' => 'testing_2', 'views' => 0)
             end
           end
         end
@@ -218,18 +221,18 @@ describe Elasticsearch::Persistence::Repository::Search do
 
         it 'raises an exception' do
           expect {
-            repository.update(1, doc: { text: 'testing_2' })
+            MyRepository.update(1, doc: { text: 'testing_2' })
           }.to raise_exception(Elasticsearch::Transport::Transport::Errors::NotFound)
         end
 
         context 'when upsert is provided' do
 
           before do
-            repository.update(1, doc: { text: 'testing' }, doc_as_upsert: true)
+            MyRepository.update(1, doc: { text: 'testing' }, doc_as_upsert: true)
           end
 
           it 'inserts the document' do
-            expect(repository.find(1)).to eq('text' => 'testing')
+            expect(MyRepository.find(1)).to eq('text' => 'testing')
           end
         end
       end
@@ -238,18 +241,18 @@ describe Elasticsearch::Persistence::Repository::Search do
 
         it 'raises an exception' do
           expect {
-            repository.update(id: 1, text: 'testing_2')
+            MyRepository.update(id: 1, text: 'testing_2')
           }.to raise_exception(Elasticsearch::Transport::Transport::Errors::NotFound)
         end
 
         context 'when upsert is provided' do
 
           before do
-            repository.update({ id: 1, text: 'testing' }, doc_as_upsert: true)
+            MyRepository.update({ id: 1, text: 'testing' }, doc_as_upsert: true)
           end
 
           it 'inserts the document' do
-            expect(repository.find(1)).to eq('text' => 'testing')
+            expect(MyRepository.find(1)).to eq('text' => 'testing')
           end
         end
       end
@@ -275,18 +278,18 @@ describe Elasticsearch::Persistence::Repository::Search do
     context 'when the document exists' do
 
       let!(:id) do
-        repository.save(Note.new)['_id']
+        MyRepository.save(Note.new)['_id']
       end
 
       context 'an id is provided' do
 
         before do
-          repository.delete(id)
+          MyRepository.delete(id)
         end
 
         it 'deletes the document using the id' do
           expect {
-            repository.find(id)
+            MyRepository.find(id)
           }.to raise_exception(Elasticsearch::Persistence::Repository::DocumentNotFound)
         end
       end
@@ -294,12 +297,12 @@ describe Elasticsearch::Persistence::Repository::Search do
       context 'when a document is provided' do
 
         before do
-          repository.delete(id: id, text: 'testing')
+          MyRepository.delete(id: id, text: 'testing')
         end
 
         it 'deletes the document using the id' do
           expect {
-            repository.find(id)
+            MyRepository.find(id)
           }.to raise_exception(Elasticsearch::Persistence::Repository::DocumentNotFound)
         end
       end
@@ -308,12 +311,12 @@ describe Elasticsearch::Persistence::Repository::Search do
     context 'when the document does not exist' do
 
       before do
-        repository.create_index!
+        MyRepository.create_index!
       end
 
       it 'deletes the document using the id' do
         expect {
-          repository.delete(1)
+          MyRepository.delete(1)
         }.to raise_exception(Elasticsearch::Transport::Transport::Errors::NotFound)
       end
     end

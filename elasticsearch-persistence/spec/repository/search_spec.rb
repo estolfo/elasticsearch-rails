@@ -3,11 +3,14 @@ require 'spec_helper'
 describe Elasticsearch::Persistence::Repository::Search do
 
   let(:repository) do
-    Elasticsearch::Persistence::Repository::Base
+    class MyRepository
+      include Elasticsearch::Persistence::Repository
+      client DEFAULT_CLIENT
+    end
+    MyRepository
   end
 
   after do
-    begin; Elasticsearch::Persistence::Repository::Base.delete_index!; rescue; end
     begin; MyRepository.delete_index!; rescue; end
     Object.send(:remove_const, MyRepository.name) if defined?(MyRepository)
   end
@@ -55,15 +58,16 @@ describe Elasticsearch::Persistence::Repository::Search do
     context 'when the repository does have a type set' do
 
       before do
-        class MyRepository < Elasticsearch::Persistence::Repository::Base
+        class MyRepository
+          include Elasticsearch::Persistence::Repository
+          client DEFAULT_CLIENT
           document_type 'other_type'
-          client Elasticsearch::Persistence::Repository::Base.client
         end
         MyRepository.save({ name: 'emily' }, refresh: true)
       end
 
       let(:repository) do
-        Elasticsearch::Persistence::Repository::Base
+        MyRepository
       end
 
       context 'when options are provided' do
@@ -128,15 +132,16 @@ describe Elasticsearch::Persistence::Repository::Search do
     context 'when the repository does have a type set' do
 
       before do
-        class MyRepository < Elasticsearch::Persistence::Repository::Base
+        class MyRepository
+          include Elasticsearch::Persistence::Repository
+          client DEFAULT_CLIENT
           document_type 'other_type'
-          client Elasticsearch::Persistence::Repository::Base.client
         end
         MyRepository.save({ name: 'emily' }, refresh: true)
       end
 
       let(:repository) do
-        Elasticsearch::Persistence::Repository::Base
+        MyRepository
       end
 
       context 'when options are provided' do

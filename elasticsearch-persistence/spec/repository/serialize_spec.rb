@@ -2,12 +2,14 @@ require 'spec_helper'
 
 describe Elasticsearch::Persistence::Repository::Serialize do
 
-  let(:repository) do
-    Elasticsearch::Persistence::Repository::Base
+  before do
+    class MyRepository
+      include Elasticsearch::Persistence::Repository
+      client DEFAULT_CLIENT
+    end
   end
 
   after do
-    begin; Elasticsearch::Persistence::Repository::Base.delete_index!; rescue; end
     begin; MyRepository.delete_index!; rescue; end
     Object.send(:remove_const, MyRepository.name) if defined?(MyRepository)
   end
@@ -23,7 +25,7 @@ describe Elasticsearch::Persistence::Repository::Serialize do
     end
 
     it 'calls #to_hash on the object' do
-      expect(repository.serialize(MyDocument.new)).to eq(a: 1)
+      expect(MyRepository.serialize(MyDocument.new)).to eq(a: 1)
     end
   end
 
@@ -33,9 +35,7 @@ describe Elasticsearch::Persistence::Repository::Serialize do
 
       before do
         require 'set'
-        class MyRepository < Elasticsearch::Persistence::Repository::Base
-          klass Set
-        end
+        MyRepository.klass = Set
       end
 
       it 'instantiates an object of the klass' do
@@ -48,10 +48,6 @@ describe Elasticsearch::Persistence::Repository::Serialize do
     end
 
     context 'when klass is not defined on the Repository' do
-
-      before do
-        class MyRepository < Elasticsearch::Persistence::Repository::Base; end
-      end
 
       it 'returns the raw Hash' do
         expect(MyRepository.deserialize('_source' => { a: 1 })).to be_a(Hash)

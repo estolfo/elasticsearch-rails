@@ -11,6 +11,8 @@ RSpec.configure do |config|
   config.color = true
 
   config.before(:suite) do
-    Elasticsearch::Persistence::Repository::Base.client = DEFAULT_CLIENT
+    #Elasticsearch::Persistence::Repository::Base.client = DEFAULT_CLIENT
   end
 end
+
+require 'pry-nav'
